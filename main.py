@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, HTTPException, status
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
@@ -21,16 +21,16 @@ class Task(BaseModel):
 def read_root():
     return FileResponse("static/index.html")
 
-@app.get("/tasks")
+@app.get("/tasks", status_code=status.HTTP_200_OK)
 def get_tasks():
     return tasks
 
-@app.post("/tasks")
+@app.post("/tasks", status_code=status.HTTP_201_CREATED)
 def create_task(task: Task):
     tasks.append(task)
     return task
 
-@app.put("/tasks/{task_id}")
+@app.put("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def update_task(task_id: int, updated_task: Task):
     for i, task in enumerate(tasks):
         if task.id == task_id:
@@ -38,12 +38,18 @@ def update_task(task_id: int, updated_task: Task):
             task.description = updated_task.description
             task.completed = updated_task.completed
             return task
-    return {"error": "Task not found"}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Task not found"
+    )
 
-@app.delete("/tasks/{task_id}")
+@app.delete("/tasks/{task_id}", status_code=status.HTTP_200_OK)
 def delete_task(task_id: int):
     for task in tasks:
         if task.id == task_id:
             tasks.remove(task)
             return {"message": "Task deleted successfully"}
-    return {"error": "Task not found"}
+    raise HTTPException(
+        status_code=status.HTTP_404_NOT_FOUND,
+        detail="Task not found"
+    )
